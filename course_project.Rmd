@@ -1,0 +1,511 @@
+---
+title: 'Course Project: Demonstrations of the central limit theorem and using the
+  t distribution in hypothesis testing'
+author: "Vineet W. Singh"
+date: "19 February 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Introduction
+
+Part 1 of this project, briefly demonstrates the central limit theorem and the
+law of large numbers at work while using about 1000 samples.  
+
+Part 2 demonstrates the use of the t distribution in finding confidence intervals 
+for a two sets of data of about 30 observations each.  
+
+### Part 1
+
+This part demonstrates the law of large numbers and the central limit theorem. 
+The law of large numbers states that given enough observations, any statistics 
+generated from those observations will estimate the pouplation statistics with 
+some accuracy.  
+
+For example, given a data set with a large number of observations/sampling units, 
+that has been collected from a population that is exponentially distibuted and 
+which has a certain rate parameter(lambda), then the theoretical population mean 
+is supposed to be equal to 1/lambda and the theoretical standard deviation of 
+the mean is also supposed to be equal to 1/lambda.  
+
+In this chunk of R code, we randomly generate 1000 observations from an 
+exponential distribution with a rate parameter of 0.2.  
+
+```{r chunk1}
+mexp<-rexp(1000,0.2)
+```
+
+The mean of this particular sample of 1000 observations is:
+```{r chunk2}
+print(mean(mexp))
+```
+The theoretical mean of the original population that follows the exponential 
+distribution is 1/lambda= 1/0.2 = 5.  
+
+As demonstrated, the mean from the randomly generated set is quite close to 
+that of the population mean and can be taken to be a fair/close estimate of the
+population mean.  
+
+A histogram with the original distribution values and the theoretical mean, 
+sample mean is displayed below:  
+```{r chunk 3}
+hist(mexp, main=paste0("Histogram of 1000 randomly genererated points\n",
+                        "from an exponential distribution "),
+     xlab="Sample Values")
+abline(v=mean(mexp),col=2,lwd=4)
+abline(v=5,col=4,lwd=4)
+legend("topright", c("Sample Mean","Theoretical Mean"), col=c(2,4), lwd=4)
+```
+
+The central limit theorem states that the means of a large number of samples
+will be normally distributed around the theoretical population mean.  
+
+To demonstrate this we first generate 1000 samples of 1000 
+observations, randomly taken from the exponential distribution with a 
+population rate parameter(lambda) of 0.2.  
+
+As demonstrated above the population mean in supposed to be 5 and the 
+standard deviation of the population mean is also supposed to be 5.    
+
+```{r chunk4}
+#mns is a list containing 1000 mean values of 1000 observations randomly
+#generated from a exponential distribution
+mns=NULL
+#sds is a list containing 1000 standard deviation of mean of 1000 observations 
+#randomly generated from the same data as above.
+sds=NULL
+for (i in 1 : 1000){
+x<-rexp(1000,0.2)
+mns=c(mns,mean(x))
+sds=c(sds,sd(x))
+}
+```
+
+We can now plot a simple histogram to observe how the actual means from the 
+1000 samples are distributed. The theoretical population mean is 
+demonstrated as a vertical red line:
+
+```{r chunk5}
+hist(mns, main=paste0("Histogram of means of 1000 samples\n",
+                       "each sample has 1000 observations\n",
+                    "from a population following an exponential distribution"),
+     xlab="Mean") 
+abline(v=5,col=2,lwd=4)
+legend("topright", "Theoretical Mean", col=2, lwd=4)
+```
+
+As can be seen from the histogram above, the generated distribution is fairly 
+symmetrical around the theoretical population mean.  
+
+Further, there are two ways to demonstrate that the sample means are normally 
+distributed.  
+
+One is to convert the frequencies of the means into  probabilities and 
+plot this data as a histogram and superimpose onto this histogram, 
+a density line representing probability density:
+```{r chunk6}
+hist(mns, main=paste0("Histogram of means of 1000 samples\n",
+                       "each sample has 1000 observations\n",
+                    "from a population following an exponential distribution"),
+     xlab="Mean",
+     probability = TRUE) 
+lines(density(mns,adjust=2),col=4)
+abline(v=5,col=2,lwd=4)
+legend("topright", c("Theoretical Mean","Probability Density"),col=c(2,4),lwd=4)
+```
+
+Another way is to use the qqnorm function to generate a log normal plot of the 
+data. If the plot points fall on a straight line the data follows a normal 
+distribution.  
+
+```{r chunk7}
+qqnorm(mns, main=paste0("Log Normal Plot of means of 1000 samples\n",
+                       "each sample has 1000 observations\n",
+                    "from a population following an exponential distribution"))
+qqline(mns,col=2)
+legend("bottomright", "Log Normal Line",col=2,lwd=4)
+```
+
+Similarly we can prove that the standard deviations also are normally 
+distributed by  
+
+1) Showing that the standard deviations are symmetrerical around the 
+population SD.  
+
+```{r chunk8}
+hist(sds, main=paste0("Histogram of Standard Deviation of means of \n",
+                       "1000 samples, each sample has 1000 observations\n",
+                    "from a population following an exponential distribution"),
+     xlab="SD") 
+abline(v=5,col=2,lwd=4)
+legend("topright", "Theoretical SD", col=2, lwd=4)
+```
+
+and  
+
+2) By plotting the log normal plot of the SD values.  
+
+```{r chunk9}
+qqnorm(sds, main=paste0("Log Normal Plot of SD of means of 1000 samples\n",
+                       "each sample has 1000 observations\n",
+                    "from a population following an exponential distribution"))
+qqline(sds,col=2)
+legend("bottomright", "Log Normal Line",col=2,lwd=4)
+```
+
+
+### Conclusion  
+
+We have shown as to how the central limit theorem is satisfied for both the 
+mean and the standard deviation of simulated 1000 samples. The original 
+population is exponentially distributed but the means and SD's of all samples
+generated from this exponential distribution follow a normal distribution 
+centered at the population mean and SD respectively. 
+
+## Part 2
+
+Part 2 of this project demostrates the use of use of the t distribution to 
+generate confidence intervals and t values to do hypothesis testing based on 
+the ToothGrowth data set that is a part of the datasets library in R. 
+
+We hope to answer the following questions after analysing the data:  
+
+1) Do the teeth grow the same, for all dosage of supplements or do different 
+doses of supplements result in different growth.   
+
+2) Do both the supplements result in the same rate of growth of teeth or is 
+the growth rate different for each supplement.
+
+The tooth growth data set contains data regarding Vitamin C given as a
+supplement and the resulting growth in teeth of 60 guinea pigs. 
+More information about the dataset can be found at: 
+https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/ToothGrowth.html
+
+### Analysis
+
+To begin the analysis the dplyr and datasets packages are loaded using the 
+library command. This automatically loads the tooth growth data into R. 
+
+```{r chunk10}
+library(datasets)
+library(dplyr)
+```
+
+The structure of the ToothGrowth dataset can be found using the str function.  
+
+```{r chunk11}
+str(ToothGrowth)
+```
+
+We need to partition this set according to the supplements concerned, either
+"VC" for Ascorbic Acid or "OJ" for orange juice. The resultant datasets are 
+stored in different frames.
+
+We also need to add a new variable "rate" which will measure the rate at which 
+the teeth have grown according to the amount of supplement given. In effect, we 
+are normalising the length with respect to the dose. 
+
+```{r chunk12}
+tg1 <- ToothGrowth %>% filter(supp=="VC")
+tg1<-tg1 %>% mutate(rate=len/dose)
+tg2 <- ToothGrowth %>% filter(supp=="OJ")
+tg2<-tg2 %>% mutate(rate=len/dose)
+```
+
+We can also generate some statistics for each supplement group. 
+
+```{r chunk13}
+#calculate summaries for each sub group of the two groups 
+tg1 %>% group_by(dose) %>% summarise(mean=mean(rate),sd=sd(rate),n=n())
+tg2 %>% group_by(dose) %>% summarise(mean=mean(rate),sd=sd(rate),n=n())
+```
+The growth rates according to the supplement type and dosage groups are:
+
+#### Ascorbic Acid : Summary 
+<table style="border: 1px solid black;">
+<tr>
+  <th style="border: 1px solid black;"> Dose(mg/day)  </td>
+  <th style="border: 1px solid black;"> Mean</td>
+  <th style="border: 1px solid black;"> SD </td>
+</tr>
+<tr>
+  <td style="border: 1px solid black;"> 0.5</td>
+  <td style="border: 1px solid black;">16</td>
+  <td style="border: 1px solid black;">5.49</td>
+</tr>
+<tr>
+  <td style="border: 1px solid black;">1</td>
+  <td style="border: 1px solid black;">16.8</td>
+  <td style="border: 1px solid black;">2.52</td>
+</tr>
+<tr>
+  <td style="border: 1px solid black;">2</td>
+  <td style="border: 1px solid black;">13.1</td>
+  <td style="border: 1px solid black;">2.40</td>
+</tr>
+</table>
+  
+  
+#### Orange Juice : Summary 
+<table style="border: 1px solid black;">
+<tr>
+  <th style="border: 1px solid black;"> Dose(mg/day)  </td>
+  <th style="border: 1px solid black;"> Mean</td>
+  <th style="border: 1px solid black;"> SD </td>
+</tr>
+<tr>
+  <td style="border: 1px solid black;"> 0.5</td>
+  <td style="border: 1px solid black;">26.5</td>
+  <td style="border: 1px solid black;">8.92</td>
+</tr>
+<tr>
+  <td style="border: 1px solid black;">1</td>
+  <td style="border: 1px solid black;">22.7</td>
+  <td style="border: 1px solid black;">3.91</td>
+</tr>
+<tr>
+  <td style="border: 1px solid black;">2</td>
+  <td style="border: 1px solid black;">13</td>
+  <td style="border: 1px solid black;">1.33</td>
+</tr>
+</table>
+
+We can draw a plot of the growth rates according to the supplement types. 
+
+```{r chunk14}
+plot(x=row.names(tg1),y=tg1$rate,type="p",pch=1,ylab="Rate",
+     main="Tooth Growth Rate According to Supplement",
+     xlab="Observation No.", ylim=c(0,50),col=1)
+lines(x=row.names(tg1),y=tg1$rate,type="l",lty=1,lwd=2,col=1)
+points(x=row.names(tg2),y=tg2$rate,pch=1,col=2)
+lines(x=row.names(tg2),y=tg2$rate,type="l",lty=1,lwd=2,col=2)
+legend("topright", c("Ascorbic Acid","Orange Juice"),col=c(1,2),lwd=4)
+```
+
+From this preliminary analysis, we can observe that the growth rates for both 
+supplements are different. 
+Within each supplement group the growth rates vary according to dosages of 
+supplement given, with the maximum variabilty in the 0.5 mg group for 
+both supplements. 
+
+But to get detailed answers we will need to formulate some hypothesis and 
+carry out some tests. 
+
+We will need to make some assumptions about the data before we carry out the 
+tests. 
+
+We can assume that the growth rate in each animal in each subgroup is 
+independent since each animal is different. 
+Further more we can assume that the variance 
+within each of the 6 subgroups (supplement & dosage) is the same. 
+
+However, it is probably not very wise to assume that the variance accross 
+different subgroups is the same as, clearly the dosage levels are different 
+across each subgroup in one supplement group. 
+
+The first null hypothesis we propose is:  
+
+#### Null Hypothesis No. 1
+Mean growth rates for the 0.5(mg/day) group and the 1(mg/day) group of the 
+ascorbic acid set are the same.
+
+To assist us in our analysis we divide the data up further into three groups for 
+each supplement type. 
+
+```{r chunk15}
+tg11<- tg1 %>% filter(dose==0.5)
+tg12<- tg1 %>% filter(dose==1)
+tg13<- tg1 %>% filter(dose==2)
+
+tg21<- tg2 %>% filter(dose==0.5)
+tg22<- tg2 %>% filter(dose==1)
+tg23<- tg2 %>% filter(dose==2)
+```
+
+Since we only have 10 measurements each subgroup, we need to make 
+confidence intervals and do tests using the t distribution. 
+This is done using the following command: 
+
+```{r chunk16}
+t.test(tg11$rate,tg12$rate,paired=F,var.equal = F)
+```
+
+The t-value is -0.42396, p-value is above .50 and the confidence interval for 
+the difference of means  
+contains 0. 
+
+<u> <b>We cannot, therefore, reject null hypothesis no. 1.</b> </u>  
+
+We can assume that the mean growth rates for both 0.5 (mg/day) and 1 (mg/day) 
+dose groups of the ascorbic acid supplement set are the same. 
+
+The next null hypothesis we propose is: 
+
+#### Null Hypothesis No. 2
+Mean growth rates for the 1(mg/day) group and the 2(mg/day) group of the 
+ascorbic acid set are the same.
+
+We test using the t.test function as outlined above: 
+
+```{r chunk17}
+t.test(tg12$rate,tg13$rate,paired=F,var.equal = F)
+```
+
+Here we come across a very high t-value of 3.3662, a low p value and a 
+confidence interval where the difference is well above 1.  
+<b> <u> We can, therefore, 
+reject the null hypothesis no. 2 </u> </b> and conclude that the means for 
+the two subgroups 
+are different.  
+
+We propose the following hypotheses:  
+
+#### Null hypothesis No. 3: 
+Mean growth rates for the 0.5(mg/day) group and the 1(mg/day) group of the 
+orange juice set are the same.
+
+#### Null hypothesis No. 4
+Mean growth rates for the 1(mg/day) group and the 2(mg/day) group of the 
+orange juice set are the same.
+
+```{r chunk18}
+t.test(tg21$rate,tg22$rate,paired=F,var.equal = F)
+t.test(tg22$rate,tg23$rate,paired=F,var.equal = F)
+```
+
+With the test number three, we find that the t-value is above 1 but not 
+very high, the confidence interval of the difference contains 0 so we cannot 
+rule out that the means might not be the same. Results of test number 4 tell a 
+different story, however, the t-value is very large, the p-value is negligible 
+and the confidence interval of the difference does not contain 0.  
+
+<b> <u> We cannot, therefore, reject null hypothesis no. 3, but using the 
+argument in the sentence above, we can reject null hypothesis no. 4. </u> </b>
+
+Based on the results of the 4 hypothesis tests above, we should merge the two 
+groups of 0.5(mg/day) and 1(mg/day) for each of the two supplement types. 
+and then do a comparision of the two supplement types based on two groups for 
+each of the supplement type 0.5-1(mg/day) and 2(mg/day).
+
+```{r chunk19}
+#CI for mean growth rate for tg11 and tg12 includes 0 so we cannot rule out
+#that the mean growth rate for both tg21 and tg22 can be the same
+#it might make sense to group tg11 and tg12 together and assume a common mean 
+#growth rate. 
+
+#merge tg21 and tg22 into one frame
+tg11<-rbind(tg11,tg12)
+
+#reassign tg23 to tg22
+tg12<-tg13
+
+#CI for mean growth rate for tg21 and tg22 includes 0 so we cannot rule out
+#that the mean growth rate for both tg21 and tg22 can be the same
+#it might make sense to group tg21 and tg22 together and assume a common growth 
+#rate. 
+
+#merge tg21 and tg22 into one frame
+tg21<-rbind(tg21,tg22)
+
+#reassign tg23 to tg22
+tg22<-tg23
+```
+
+The new data sets are ready for the final phase of the analysis. 
+Hypothesis tests between the two supplement groups to answer the questions 
+about which supplement type and dose effects growth the most. 
+
+#### Null Hypothesis No. 5
+There is no difference in the Mean growth rates between 0.5-1 (mg/day) dosage 
+sub-group of the Ascorbic Acid and Orange Juice supplement groups. 
+
+
+```{r chunk20}
+#check rates and hypothesis test for groups according to dose & supplement
+t.test(tg11$rate,tg21$rate,var.equal=F,paired=F)
+```
+
+It is clear from the large negative t-value that the means are not the same. 
+The confidence interval does not contain 0 and is entirely negative implying 
+that, according to this test, the average value of tooth growth in the first 
+group (ascorbic acid) will lie below the average value of the tooth growth in 
+the second group (orange juice). 
+
+<b> <u> We can, therefore reject the null hypothesis no. 5</u> </b>
+
+#### Null Hypothesis No. 6
+
+There is no difference in the Mean growth rates between 2(mg/day) dosage 
+sub-group of the Ascorbic Acid and Orange Juice supplement groups. 
+
+```{r chunk21}
+#check rates and hypothesis test for groups according to dose & supplement
+t.test(tg12$rate,tg22$rate,var.equal=F,paired=F)
+```
+
+This result is more interesting. As can be seen from the plot, the average tooth
+growth rate for
+each supplement type begins to get close to one another once the dosage begins 
+to reach the 2(mg/day) level. 
+The t-value is small and p-value large, The confidence interval of the 
+difference is small and does contain 0. 
+We can conclude that based on evidence provided by this data there is 
+no difference in the mean growth rates of the 2(mg/day) subgroup of each 
+supplement group. 
+<b> <u> We cannot, therefore, reject null hyposthesis no. 6. </u> </b>
+
+It would be interesting to make one final test using all of the 30 
+observations of each supplement group. 
+
+We propose:  
+
+#### Null hyposthesis no. 7.  
+There is no difference in the Mean growth rates between the Ascorbic Acid and 
+Orange Juice supplement groups. 
+
+```{r chunk22}
+#check rates and hypothesis test for groups according to supplement
+t.test(tg1$rate,tg2$rate,var.equal=F,paired=F)
+```
+
+This result shows that overall if we take normalised growth rates for all 
+observations in the two groups, the growth rates for each supplement type
+is different as the t-value is large, p-value is negligible and the confidence
+interval of the difference does not contain 0. It is safe to conclude that the 
+mean growth rates for each supplement type is different. 
+
+<b> <u> We can, therefore reject the null hypothesis no. 7</u> </b>
+
+
+### Conclusions
+
+After analysing the data and proposing seven hypothesis we can conclude that:  
+
+1) Average growth rates of teeth for the animals that were given 0.5 to 1(mg/day) 
+of ascorbic acid as a supplement are similar. The average growth rate of the 
+teeth of animals given 2(mg/day) ascorbic acid as a supplement is not similar to 
+the average growth rates of the group of animals given 0.5-1(mg/day) ascorbic 
+acid as a supplement.  
+2) Average growth rates of teeth for the animals that were given 0.5 to 1(mg/day) 
+of orange juice as a supplement are similar. The average growth rate of the 
+teeth of animals given 2(mg/day) orange juice as a supplement is not similar to 
+the average growth rates of the group of animals given 0.5-1(mg/day) orange 
+juice as a supplement.  
+3) The average growth rate of teeth of animals given 0.5-1(mg/day) ascorbic acid 
+supplement is not similar to the average growth rate of teeth of animals given 
+0.5-1(mg/day) orange juice supplement.   
+4) The average growth rate of teeth of animals given 2(mg/day) ascorbic acid 
+supplement is similar to the average growth rate of teeth of animals given 
+0.5-1(mg/day) orange juice supplement.  
+5) Overall, if all data points are taken together (thereby ignoring 
+conlcusion 4 above), 
+the average growth rate of 
+teeth of animals given ascorbic acid 
+supplement is not similar to the average growth rate of teeth of animals given 
+orange juice supplement.
+
